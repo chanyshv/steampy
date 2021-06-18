@@ -3,6 +3,8 @@ import decimal
 import bs4
 import urllib.parse as urlparse
 from typing import List, Union
+import pickle
+import base64
 
 import json
 import requests
@@ -327,3 +329,7 @@ class SteamClient:
             return parse_price(balance)
         else:
             return balance
+
+    def save_cookies(self) -> str:
+        cookies = self._session.cookies
+        return base64.b64encode(pickle.dumps(cookies)).decode('U8')
