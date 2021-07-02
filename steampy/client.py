@@ -344,3 +344,11 @@ class SteamClient:
     def save_cookies(self) -> str:
         cookies = self._session.cookies
         return base64.b64encode(pickle.dumps(cookies)).decode('U8')
+
+    def login_form_cookies(self, username, password, steam_guard, cookies):
+        self.steam_guard = guard.load_steam_guard(steam_guard)
+        self.username = username
+        self._password = password
+        self._session.cookies = cookies
+        self.was_login_executed = True
+        self.market._set_login_executed(self.steam_guard, self._get_session_id())
