@@ -1,13 +1,14 @@
 import decimal
-
-import bs4
-import urllib.parse as urlparse
 from typing import List, Union, Dict
+import urllib.parse as urlparse
 import pickle
 import base64
-
 import json
+
+import bs4
 import requests
+import tenacity as tnc
+
 from steampy import guard
 from steampy.chat import SteamChat
 from steampy.confirmation import ConfirmationExecutor
@@ -80,6 +81,11 @@ class SteamClient:
         self.logout()
 
     @login_required
+    @tnc.retry(
+        retry=tnc.retry_if_exception_type(requests.exceptions.ProxyError),
+        stop=tnc.stop_after_attempt(4),
+        wait=tnc.wait_exponential()
+    )
     def is_session_alive(self):
         steam_login = self.username
         main_page_response = self._session.get(SteamUrl.COMMUNITY_URL)
@@ -125,6 +131,11 @@ class SteamClient:
         params = {'key': self._api_key}
         return self.api_call('GET', 'IEconService', 'GetTradeOffersSummary', 'v1', params).json()
 
+    @tnc.retry(
+        retry=tnc.retry_if_exception_type(requests.exceptions.ProxyError),
+        stop=tnc.stop_after_attempt(4),
+        wait=tnc.wait_exponential()
+    )
     def get_trade_offers(self, merge: bool = True) -> dict:
         params = {'key': self._api_key,
                   'get_sent_offers': 1,
@@ -191,6 +202,11 @@ class SteamClient:
         return items
 
     @login_required
+    @tnc.retry(
+        retry=tnc.retry_if_exception_type(requests.exceptions.ProxyError),
+        stop=tnc.stop_after_attempt(4),
+        wait=tnc.wait_exponential()
+    )
     def accept_trade_offer(self, trade_offer_id: str) -> dict:
         trade = self.get_trade_offer(trade_offer_id)
         trade_offer_state = TradeOfferState(trade['response']['offer']['trade_offer_state'])
@@ -300,6 +316,11 @@ class SteamClient:
         return max(my_escrow_duration, their_escrow_duration)
 
     @login_required
+    @tnc.retry(
+        retry=tnc.retry_if_exception_type(requests.exceptions.ProxyError),
+        stop=tnc.stop_after_attempt(4),
+        wait=tnc.wait_exponential()
+    )
     def make_offer_with_url(self, items_from_me: List[Asset], items_from_them: List[Asset],
                             trade_offer_url: str, message: str = '', case_sensitive: bool=True) -> dict:
         token = get_key_value_from_url(trade_offer_url, 'token', case_sensitive)
